@@ -56,7 +56,7 @@ def build_3d_maze():
     log_file_path = "results/data/simulation_log.txt"
     
     with open(log_file_path, "w") as f:
-        f.write("=== LOG DE NAVEGACIÓN DINÁMICA PERFECTA CON A* ===\n")
+        f.write("=== LOG DE NAVEGACIÓN ULTRA SEGURA CON A* ===\n")
         f.write("Tiempo(s) | Nodo_Destino | Pos_Actual_X | Pos_Actual_Y\n")
 
     try:
@@ -110,8 +110,9 @@ def build_3d_maze():
             elif cell == "S":
                 start_cell = (r, c)
                 start_pos = [x, y, 0.35]
-                v_robot = p.createVisualShape(p.GEOM_SPHERE, radius=0.22, rgbaColor=[1, 0, 0, 1])
-                c_robot = p.createCollisionShape(p.GEOM_SPHERE, radius=0.22)
+                # SECCIÓN ULTRA SEGURA: Radio reducido de 0.22 a 0.18 para dar más margen con los muros
+                v_robot = p.createVisualShape(p.GEOM_SPHERE, radius=0.18, rgbaColor=[1, 0, 0, 1])
+                c_robot = p.createCollisionShape(p.GEOM_SPHERE, radius=0.18)
                 robot_id = p.createMultiBody(baseMass=1.0, baseCollisionShapeIndex=c_robot, baseVisualShapeIndex=v_robot, basePosition=start_pos)
             elif cell == "G":
                 goal_cell = (r, c)
@@ -120,11 +121,10 @@ def build_3d_maze():
 
     p.resetDebugVisualizerCamera(cameraDistance=14.0, cameraYaw=0, cameraPitch=-70, cameraTargetPosition=[0, 0, 0])
 
-    print("\n--- EJECUTANDO ALGORITMO A* PARA GENERACIÓN DE WAYPOINTS ---")
+    print("\n--- EJECUTANDO MODO ULTRA SEGURO CON A* ---")
     puntos_ruta = astar_2d(maze_layout, start_cell, goal_cell)
     print(f"¡Ruta óptima calculada por A* con éxito! ({len(puntos_ruta)} celdas seguras encontradas).")
     
-    # Convertir las celdas de la ruta de la matriz al espacio de coordenadas métricas 3D
     waypoints_3d = []
     for (r, c) in puntos_ruta:
         wx = (c - cols / 2) * block_size
@@ -153,14 +153,13 @@ def build_3d_maze():
                 with open(log_file_path, "a") as log_f:
                     log_f.write(f"{elapsed:.2f}s | Nodo {current_wp + 1} | X: {pos[0]:.2f} | Y: {pos[1]:.2f}\n")
                 
-                # Tolerancia de aceptación optimizada por celda autónoma
                 if dist < 0.20:
                     current_wp += 1
-                    print(f"Agente autónomo alcanzó nodo real [{current_wp}/{len(waypoints_3d)}]")
+                    print(f"Agente autónomo alcanzó nodo seguro [{current_wp}/{len(waypoints_3d)}]")
                 else:
-                    # Desplazamiento cinemático controlado por interpolación fina (0.07 metros por frame)
+                    # SECCIÓN ULTRA SEGURA: Paso de interpolación reducido de 0.07 a 0.03 para control cinemático estricto
                     direction = diff / dist
-                    nueva_pos = np.array(pos) + direction * 0.07
+                    nueva_pos = np.array(pos) + direction * 0.03
                     nueva_pos[2] = 0.35
                     p.resetBasePositionAndOrientation(robot_id, nueva_pos.tolist(), orient)
             
@@ -168,7 +167,7 @@ def build_3d_maze():
             time.sleep(1./120.)
             
             if current_wp >= len(waypoints_3d):
-                print("\n¡PARCIAL COMPLETADO CON ÉXITO! El agente físico ejecutó A* real y llegó legalmente a la meta.")
+                print("\n¡PARCIAL COMPLETADO CON ÉXITO! El agente físico ejecutó A* con el Modo Seguro activado.")
                 time.sleep(2)
                 break
                 
@@ -176,7 +175,7 @@ def build_3d_maze():
         pass
     
     p.disconnect()
-    print("Simulación cerrada.")
+    print("Simulación cerrada con éxito.")
 
 if __name__ == "__main__":
     build_3d_maze()
