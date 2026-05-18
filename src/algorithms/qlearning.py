@@ -3,7 +3,7 @@ import time
 import random
 
 class QLearning:
-    def __init__(self, maze, alpha=0.1, gamma=0.9, epsilon=1.0,
+    def __init__(self, maze, alpha=0.2, gamma=0.95, epsilon=1.0,
                  epsilon_decay=0.995, epsilon_min=0.01, episodes=500):
         self.maze = maze
         self.alpha = alpha
@@ -13,116 +13,103 @@ class QLearning:
         self.epsilon_min = epsilon_min
         self.episodes = episodes
 
-        self.actions = [(-1,0),(1,0),(0,-1),(0,1)]  # arriba, abajo, izq, der
+        self.actions = [0, 1, 2, 3]
+        self.moves = [(-1, 0), (1, 0), (0, -1), (0, 1)]
+
         self.q_table = {}
-        self.nodes_explored = 0
-        self.execution_time = 0
         self.path = []
         self.visited = []
         self.training_rewards = []
+        self.execution_time = 0
+        self._trained = False
 
-    def _get_q(self, state, action):
-        return self.q_table.get((state, action), 0.0)
-
-    def _choose_action(self, state):
-        if random.random() < self.epsilon:
-            return random.choice(self.actions)
-        q_values = [self._get_q(state, a) for a in self.actions]
-        max_q = max(q_values)
-        best = [a for a, q in zip(self.actions, q_values) if q == max_q]
-        return random.choice(best)
-
-    def _reward(self, state, next_state, reached_goal):
-        if reached_goal:
-            return 100
-        if next_state == state:  # chocó con pared
-            return -10
-        return -1  # safe learning: penalizar cada paso para minimizar riesgo
-
-    def _step(self, state, action):
-        nr = state[0] + action[0]
-        nc = state[1] + action[1]
-        if self.maze.is_free(nr, nc):
-            return (nr, nc)
-        return state  # si hay pared, se queda igual (safe: no atraviesa)
+    def _get_reward(self, state, next_state, hit_wall):
+        if hit_wall:
+            return -15
+        if next_state == self.maze.goal:
+            return 500
+        dist_before = abs(state[0] - self.maze.goal[0]) + abs(state[1] - self.maze.goal[1])
+        dist_after  = abs(next_state[0] - self.maze.goal[0]) + abs(next_state[1] - self.maze.goal[1])
+        return -1 + (dist_before - dist_after) * 2
 
     def train(self):
-        start_time = time.time()
+        start_t = time.time()
+        max_steps = self.maze.rows * self.maze.cols * 2
 
-        for episode in range(self.episodes):
+        for ep in range(self.episodes):
             state = self.maze.start
-            total_reward = 0
-            steps = 0
-            max_steps = self.maze.rows * self.maze.cols * 2
+            episode_reward = 0
 
-            while steps < max_steps:
-                action = self._choose_action(state)
-                next_state = self._step(state, action)
-                reached_goal = (next_state == self.maze.goal)
+            for _ in range(max_steps):
+                if random.random() < self.epsilon:
+                    action = random.choice(self.actions)
+                else:
+                    q_vals = [self.q_table.get((state, a), 0.0) for a in self.actions]
+                    action = int(np.argmax(q_vals))
 
-                reward = self._reward(state, next_state, reached_goal)
-                total_reward += reward
+                dr, dc = self.moves[action]
+                candidate = (state[0] + dr, state[1] + dc)
+                hit_wall = not self.maze.is_free(candidate[0], candidate[1])
+                next_state = state if hit_wall else candidate
 
-                # Update Q-table
-                old_q = self._get_q(state, action)
-                next_max = max([self._get_q(next_state, a) for a in self.actions])
-                new_q = old_q + self.alpha * (reward + self.gamma * next_max - old_q)
-                self.q_table[(state, action)] = new_q
+                reward = self._get_reward(state, next_state, hit_wall)
+                episode_reward += reward
+
+                old_q    = self.q_table.get((state, action), 0.0)
+                next_max = max([self.q_table.get((next_state, a), 0.0) for a in self.actions])
+                self.q_table[(state, action)] = old_q + self.alpha * (
+                    reward + self.gamma * next_max - old_q
+                )
 
                 state = next_state
-                steps += 1
-
-                if reached_goal:
+                if state == self.maze.goal:
                     break
 
-            self.training_rewards.append(total_reward)
-
-            # Decay epsilon
+            self.training_rewards.append(episode_reward)
             if self.epsilon > self.epsilon_min:
                 self.epsilon *= self.epsilon_decay
 
-        self.execution_time = time.time() - start_time
+        self.execution_time = time.time() - start_t
+        self._trained = True
 
     def solve(self):
-        self.train()
+        if not self._trained:
+            self.train()
 
-        # Extraer ruta greedy desde Q-table entrenada
         state = self.maze.start
         self.path = [state]
         self.visited = [state]
-        self.nodes_explored = 0
         visited_set = {state}
-
-        max_steps = self.maze.rows * self.maze.cols * 2
+        max_steps = self.maze.rows * self.maze.cols * 3
 
         for _ in range(max_steps):
-            q_values = [self._get_q(state, a) for a in self.actions]
-            action = self.actions[int(np.argmax(q_values))]
-            next_state = self._step(state, action)
+            q_vals = [self.q_table.get((state, a), 0.0) for a in self.actions]
+            action = int(np.argmax(q_vals))
+            dr, dc = self.moves[action]
+            next_state = (state[0] + dr, state[1] + dc)
 
-            self.nodes_explored += 1
-            self.visited.append(next_state)
-
-            if next_state == self.maze.goal:
-                self.path.append(next_state)
-                return True
-
+            if not self.maze.is_free(next_state[0], next_state[1]):
+                break
             if next_state in visited_set:
-                # Atascado, fallo
-                return False
+                break
 
             visited_set.add(next_state)
+            self.visited.append(next_state)
             self.path.append(next_state)
             state = next_state
+
+            if state == self.maze.goal:
+                return True
 
         return False
 
     def get_metrics(self):
+        success = len(self.path) > 1 and self.path[-1] == self.maze.goal
         return {
             'algorithm': 'Q-Learning',
-            'nodes_explored': self.nodes_explored,
-            'path_length': len(self.path),
+            'nodes_explored': len(self.visited),
+            'path_length': len(self.path) if success else 0,
             'execution_time': self.execution_time,
-            'success': len(self.path) > 0 and self.path[-1] == self.maze.goal,
-            'collisions_avoided': self.nodes_explored - len(self.path) if self.path else 0
+            'success': success,
+            'collisions_avoided': len(self.visited)
         }
