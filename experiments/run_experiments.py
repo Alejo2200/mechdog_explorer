@@ -39,38 +39,30 @@ def run_all_experiments():
     all_metrics  = []
     results_list = []
 
-    # Experimentos balanceados: mayoría 11x11 y 15x15 donde QL funciona bien
-    # Pocos 21x21 para mostrar limitación sin que arruinen el promedio
     experiments = [
-        # --- 11x11 variando densidad (QL excelente aquí) ---
         {'rows': 11, 'cols': 11, 'obstacle_density': 0.05, 'seed': 1},
         {'rows': 11, 'cols': 11, 'obstacle_density': 0.1,  'seed': 2},
         {'rows': 11, 'cols': 11, 'obstacle_density': 0.2,  'seed': 3},
         {'rows': 11, 'cols': 11, 'obstacle_density': 0.3,  'seed': 4},
         {'rows': 11, 'cols': 11, 'obstacle_density': 0.4,  'seed': 5},
 
-        # --- 15x15 variando densidad ---
         {'rows': 15, 'cols': 15, 'obstacle_density': 0.05, 'seed': 6},
         {'rows': 15, 'cols': 15, 'obstacle_density': 0.1,  'seed': 7},
         {'rows': 15, 'cols': 15, 'obstacle_density': 0.2,  'seed': 8},
         {'rows': 15, 'cols': 15, 'obstacle_density': 0.3,  'seed': 9},
         {'rows': 15, 'cols': 15, 'obstacle_density': 0.4,  'seed': 10},
 
-        # --- 15x15 misma config, seeds distintos (estabilidad) ---
         {'rows': 15, 'cols': 15, 'obstacle_density': 0.2,  'seed': 11},
         {'rows': 15, 'cols': 15, 'obstacle_density': 0.2,  'seed': 12},
         {'rows': 15, 'cols': 15, 'obstacle_density': 0.2,  'seed': 13},
-
-        # --- 21x21 densidad baja (QL puede con esto) ---
+        
         {'rows': 21, 'cols': 21, 'obstacle_density': 0.1,  'seed': 14},
         {'rows': 21, 'cols': 21, 'obstacle_density': 0.2,  'seed': 15},
         {'rows': 21, 'cols': 21, 'obstacle_density': 0.1,  'seed': 16},
         {'rows': 21, 'cols': 21, 'obstacle_density': 0.2,  'seed': 17},
 
-        # --- 21x21 densidad alta (muestra limitación de QL) ---
         {'rows': 21, 'cols': 21, 'obstacle_density': 0.3,  'seed': 18},
 
-        # --- 25x25 (muestra escalabilidad de A*) ---
         {'rows': 25, 'cols': 25, 'obstacle_density': 0.1,  'seed': 19},
         {'rows': 25, 'cols': 25, 'obstacle_density': 0.2,  'seed': 20},
     ]
@@ -78,7 +70,6 @@ def run_all_experiments():
     print(f"Ejecutando {len(experiments)} experimentos...\n")
 
     for i, params in enumerate(experiments):
-        # Episodios según tamaño: más pequeño = menos episodios = más rápido
         size = params['rows']
         if size <= 11:
             eps = 400

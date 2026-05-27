@@ -3,7 +3,6 @@ import matplotlib.colors as mcolors
 import numpy as np
 import matplotlib.patches as mpatches
 
-# Colores mejorados para el informe
 CMAP = mcolors.ListedColormap([
     'white',      # 0 libre
     '#2c3e50',    # 1 pared (Gris oscuro/Azul oscuro)
@@ -18,13 +17,11 @@ NORM = mcolors.BoundaryNorm(BOUNDS, CMAP.N)
 def plot_maze(maze, path=None, visited=None, title="Laberinto", ax=None, show=True):
     grid = maze.clone_grid()
 
-    # Mapeo: Dibujar todas las celdas que el robot logró "ver" o visitar
     if visited:
         for r, c in visited:
             if grid[r][c] == 0:
                 grid[r][c] = 4
 
-    # Ruta: Dibujar el camino final encontrado
     if path:
         for r, c in path:
             if grid[r][c] not in (2, 3):
@@ -37,7 +34,6 @@ def plot_maze(maze, path=None, visited=None, title="Laberinto", ax=None, show=Tr
     ax.set_title(title, fontsize=12, fontweight='bold')
     ax.axis('off')
 
-    # Leyenda para el informe (Cumple punto 95 del parcial)
     patches = [
         mpatches.Patch(color='#27ae60', label='Inicio'),
         mpatches.Patch(color='#e74c3c', label='Meta'),
@@ -80,11 +76,9 @@ def plot_comparison(maze, astar_result, ql_result, save_path=None):
     plt.tight_layout()
     if save_path:
         plt.savefig(save_path, dpi=200, bbox_inches='tight')
-    plt.close() # Cerrar para evitar consumo de memoria en WSL
+    plt.close() 
 
 def plot_metrics_bar(results_df, save_path=None):
-    # (El resto de funciones como plot_training_rewards se mantienen igual o similares)
-    # Solo asegúrate de que usen plt.savefig y plt.close() para WSL
     pass
 
 def plot_training_rewards(rewards, save_path=None):
